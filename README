@@ -2,13 +2,13 @@ This code is designed to multiply a motion mask with a deformation vector field 
 
 Requirements:
 -A Deformation Vector Field (DVF) , file should be mhd with a raw file.
--a motion mask of same dimensions as the DVF,(a binary image comprised of 1's and 0's) 
+-A motion mask of same dimensions as the DVF,(a binary image comprised of 1's and 0's) 
 -FIJI can be downloaded here https://imagej.net/Fiji/Downloads
 
 
 How To Run The Code:
 -download the .class file 
--go into your fiji folder then go into the plugins folder and paste the .class file in there
--reestart Fiji
+-go into the fiji folder then go into the plugins folder and put the '.class' file in there
+-restart Fiji
 -In fiji go to plugins and select "DVF MASK Plugin "
 -follow the instructions and Voila
