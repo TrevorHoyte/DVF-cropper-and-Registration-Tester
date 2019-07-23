@@ -1,0 +1,329 @@
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+
+import ij.*;
+import ij.plugin.*;
+import ij.io.*;
+
+
+public class Registration_TEST implements PlugIn { 
+
+	public boolean littleEndian = false;
+
+	public void run(String arg) {
+		OpenDialog od = new OpenDialog("Select Registered Image", arg);
+		String dir = od.getDirectory();
+		String baseName = od.getFileName();
+		if (baseName == null || baseName.length() == 0)
+			return;
+		int baseLength = baseName.length();
+		String lowerBaseName = baseName.toLowerCase();
+		boolean mhd = lowerBaseName.endsWith(".mhd");
+		boolean mha = lowerBaseName.endsWith(".mha");
+		boolean raw = lowerBaseName.endsWith(".raw");
+		String headerName;
+		if (mha || mhd) {
+			headerName = baseName;
+			baseName   = baseName.substring(0, baseLength - 4);
+		}
+		else {
+			baseName   = baseName.substring(0, baseLength - 4);
+			headerName = baseName + ".mhd";
+		}
+		IJ.showStatus("Opening " + headerName + "...");
+
+		ImagePlus ipRI = loadRegisteredImage(dir, baseName, headerName, mha);
+
+
+
+		//now loading Mask
+
+		OpenDialog od1 = new OpenDialog("Select motion mask ", arg);
+		String dir1 = od1.getDirectory();
+		String baseName1 = od1.getFileName();
+		if (baseName1 == null || baseName1.length() == 0)
+			return;
+		baseLength = baseName1.length();
+		String lowerBaseName1 = baseName1.toLowerCase();
+		mhd = lowerBaseName1.endsWith(".mhd");
+		mha = lowerBaseName1.endsWith(".mha");
+		raw = lowerBaseName1.endsWith(".raw");
+		String headerName1;
+		if (mha || mhd) {
+			headerName1 = baseName1;
+			baseName1   = baseName1.substring(0, baseLength - 4);
+		}
+		else {
+			baseName1   = baseName1.substring(0, baseLength - 4);
+			headerName1 = baseName1 + ".mhd";
+		}
+		IJ.showStatus("Opening " + headerName1 + "...");
+
+
+		ImagePlus ipmask = loadMask(dir1, baseName1, headerName1, mha);
+
+		IJ.showStatus(baseName1 + " opened");
+
+
+
+
+
+		/// catch final image information
+		ImagePlus mimp = multiplyandprocess (ipRI,ipmask,dir,baseName);
+
+		// Save Image
+
+		//  FileInfo mfi = new FileInfo();
+		// mfi = mimp.getFileInfo();
+
+
+		//FileInfo fi = null;
+		//File filetxt = filemhd(fi);
+
+
+
+	}
+
+	private ImagePlus loadRegisteredImage(String  dir,
+			String  baseName,
+			String  headerName,
+			boolean local) 
+
+	{
+
+		ImagePlus ipRI=null;
+
+
+		try{
+			FileInfo fi = readHeader(dir, baseName, headerName, local);
+			//IJ.showMessage("select the Registered image again In the 'Open' prompt");
+			//IJ.open("");	
+			//if the image is not opening correctly un hash the above lines and delete the 'if else'
+			if (fi.intelByteOrder )
+				IJ.run("Raw...", "open="+fi.directory+fi.fileName+" image=[16-bit Signed] width="+fi.width+" height="+fi.height+" number="+fi.nImages+" little-endian");
+			else
+				IJ.run("Raw...", "open="+fi.directory+fi.fileName+" image=[16-bit Signed] width="+fi.width+" height="+fi.height+" number="+fi.nImages);
+
+
+			IJ.run("8-bit");		
+			ipRI=IJ.getImage();
+			ipRI.setTitle("Registered-Image");
+
+		}
+
+		catch (IOException e) {
+			IJ.error("MetaImage Reader: " + e.getMessage());
+		}
+		catch (NumberFormatException e) {
+			IJ.error("MetaImage Reader: " + e.getMessage());
+		}
+
+		return ipRI;
+	}
+
+
+
+	private ImagePlus loadMask(String  dir1,
+			String  baseName1,
+			String  headerName1,
+			boolean local) 
+
+	{
+
+		ImagePlus ipmask=null;
+
+
+		try{
+			FileInfo fi1 = readHeader(dir1, baseName1, headerName1, local);
+
+			IJ.open(""+fi1.directory+fi1.fileName+"");
+			IJ.run("8-bit");
+			IJ.run("Divide...", "value=128.00000 stack");
+
+			ipmask=IJ.getImage();
+			ipmask.setTitle("mask");
+
+		}
+
+		catch (IOException e) {
+			IJ.error("MetaImage Reader: " + e.getMessage());
+		}
+		catch (NumberFormatException e) {
+			IJ.error("MetaImage Reader: " + e.getMessage());
+		}
+
+		return ipmask;
+	}
+
+
+	private ImagePlus multiplyandprocess(ImagePlus ipRI,
+			ImagePlus ipmask,String dir, String BaseName)
+	{
+		ImagePlus mimp=null;
+
+		try {
+			ImageCalculator ic = new ImageCalculator();
+			ImagePlus imp3 = ic.run("Multiply create stack", ipRI,ipmask);
+			imp3.show();
+			IJ.run("8-bit");
+			IJ.run("3D OC Options", "volume centroid centre_of_mass dots_size=5 font_size=10 show_numbers white_numbers store_results_within_a_table_named_after_the_image_(macro_friendly) redirect_to=none");
+			IJ.run("3D Objects Counter", "threshold=21 slice=160 min.=1 max.=8 exclude_objects_on_edges statistics summary");
+			// CHange these settings above for your specific image. 35 or 21 from my estimates for threshold
+			IJ.renameResults("Statistics for Result of Registered-Image", "RegisteredPoints.csv");
+			IJ.saveAs("Results", dir + "RegisteredPoints.csv");
+		}
+		catch (NumberFormatException e) {
+			IJ.error("MetaImage Reader: " + e.getMessage());
+		}
+		return mimp;
+
+	}
+
+
+	private FileInfo readHeader(String  dir,
+			String  baseName,
+			String  headerName,
+			boolean local) throws IOException, NumberFormatException
+	{
+		FileInfo fi = new FileInfo();
+		fi.directory  = dir;
+		fi.fileFormat = FileInfo.RAW;
+
+		Properties p = new Properties();
+		////for mha it is necessary to only pass the header to properties
+		BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(dir + headerName)));
+		String header= "";
+		String line= "";
+		do {
+			line = in.readLine();
+			header+= line + "\n";
+		}while(line!= null && !line.startsWith("ElementDataFile"));
+		//IJ.log("Header: " + header);
+		long header_size= header.length();
+		p.load(new ByteArrayInputStream(header.getBytes("ISO-8859-1"))); //load expects "ISO-8859-1" from a stream: http://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load%28java.io.InputStream%29
+
+		String strObjectType = p.getProperty("ObjectType");
+		String strNDims = p.getProperty("NDims");
+		String strDimSize = p.getProperty("DimSize");
+		String strElementSize = p.getProperty("ElementSize");
+		String strElementDataFile = p.getProperty("ElementDataFile");
+		String strElementByteOrderMSB = p.getProperty("ElementByteOrderMSB");
+		if (null == strElementByteOrderMSB)
+			strElementByteOrderMSB = p.getProperty("BinaryDataByteOrderMSB");
+		String strElementNumberOfChannels = p.getProperty("ElementNumberOfChannels", "1");
+		String strElementType = p.getProperty("ElementType", "MET_NONE");
+		String strHeaderSize = p.getProperty("HeaderSize", "0");
+		String strCompressedData = p.getProperty("CompressedData");
+
+		if (strObjectType == null || !strObjectType.equalsIgnoreCase("Image"))
+			throw new IOException("The specified file does not contain an image.");
+		int ndims = Integer.parseInt(strNDims);
+		if (strDimSize == null)
+			throw new IOException("The image dimension size is unspecified.");
+		else {
+			String[] parts = strDimSize.split("\\s+");
+			if (parts.length < ndims)
+				throw new IOException("Invalid dimension size.");
+			if (ndims > 1) {
+				fi.width = Integer.parseInt(parts[0]);
+				fi.height = Integer.parseInt(parts[1]);
+				fi.nImages = 1;
+				if (ndims > 2) {
+					for (int i = ndims - 1; i >= 2; --i)
+						fi.nImages *= Integer.parseInt(parts[i]);
+				}
+			}
+			else {
+				throw new IOException("Unsupported number of dimensions.");
+			}
+		}
+		if (strElementSize != null) {
+			String[] parts = strElementSize.split("\\s+");
+			if (parts.length > 0)
+				fi.pixelWidth  = Double.parseDouble(parts[0]);
+			if (parts.length > 1)
+				fi.pixelHeight = Double.parseDouble(parts[1]);
+			if (parts.length > 2)
+				fi.pixelDepth  = Double.parseDouble(parts[2]);
+		}
+		int numChannels = Integer.parseInt(strElementNumberOfChannels);
+		if (numChannels == 1) {
+			if (strElementType.equals("MET_UCHAR"))       { fi.fileType = FileInfo.GRAY8;           }
+			else if (strElementType.equals("MET_SHORT"))  { fi.fileType = FileInfo.GRAY16_SIGNED;   }
+			else if (strElementType.equals("MET_USHORT")) { fi.fileType = FileInfo.GRAY16_UNSIGNED; }
+			else if (strElementType.equals("MET_INT"))    { fi.fileType = FileInfo.GRAY32_INT;      }
+			else if (strElementType.equals("MET_UINT"))   { fi.fileType = FileInfo.GRAY32_UNSIGNED; }
+			else if (strElementType.equals("MET_FLOAT"))  { fi.fileType = FileInfo.GRAY32_FLOAT;    }
+			else if (strElementType.equals("MET_DOUBLE")) { fi.fileType = FileInfo.GRAY64_FLOAT;    }
+			else {
+				throw new IOException(
+						"Unsupported element type: " +
+								strElementType +
+						".");
+			}
+		}
+		else if (numChannels == 3) {
+			if (strElementType.equals("MET_FLOAT")) fi.fileType= FileInfo.GRAY32_FLOAT;
+			else {
+				throw new IOException(
+						"Unsupported element type: " +
+								strElementType +
+						".");
+			}
+		}
+		else {
+			throw new IOException("Unsupported number of channels.");
+		}
+
+		if (strElementDataFile != null && strElementDataFile.length() > 0) {
+			if (strElementDataFile.equals("LOCAL")){
+				fi.fileName = headerName;
+				//IJ.log("Detected local data storage!" + fi.fileName);
+			}
+			else
+				fi.fileName = strElementDataFile;
+		}
+		else {
+			if (!local)
+				fi.fileName = baseName + ".raw";
+			else
+				fi.fileName = headerName;
+		}
+
+		if (strElementByteOrderMSB != null) {
+			if (strElementByteOrderMSB.length() > 0
+					&& (strElementByteOrderMSB.charAt(0) == 'T' ||
+					strElementByteOrderMSB.charAt(0) == 't' ||
+					strElementByteOrderMSB.charAt(0) == '1')) 
+				fi.intelByteOrder = false;
+			else
+				fi.intelByteOrder = true;
+		}
+		//store compression info strCompressedData
+		if (strCompressedData != null) {
+			if (strCompressedData.length() > 0
+					&& (strCompressedData.charAt(0) == 'T' ||
+					strCompressedData.charAt(0) == 't' ||
+					strCompressedData.charAt(0) == '1')) 
+				////no FileInfo.ZLIB: http://rsbweb.nih.gov/ij/developer/api/constant-values.html#ij.io.FileInfo.ZIP
+				fi.compression = FileInfo.COMPRESSION_UNKNOWN; //FileOpener.createInputStream will return null which will cause the ExtendedFileOpener to check for .zraw ;-)
+		}
+
+		fi.longOffset = (long)Integer.parseInt(strHeaderSize);
+		if(local && fi.compression != FileInfo.COMPRESSION_UNKNOWN)
+			fi.longOffset+= header_size;
+
+		return fi;
+
+	}
+
+	
+}
+
+
+
+
+
+
