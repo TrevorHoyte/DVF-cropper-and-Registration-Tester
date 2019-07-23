@@ -1,3 +1,4 @@
+*****************************************************************************************************************************
 This code is designed to multiply a motion mask with a deformation vector field in order to essentially crop the Vector field.
 
 Requirements:
@@ -12,3 +13,55 @@ How To Run The Code:
 -restart Fiji
 -In fiji go to plugins and select "DVF MASK Plugin "
 -follow the instructions and Voila
+*****************************************************************************************************************************
+The Code Registration Test is used to measure bead distance
+-multiplies a registered image with a motion mask to keep only the important part of the image
+-the code thresholds the result image to a highlight the high intensity structures ie the beads and mabny others parts.
+-the code then saves a csv file containing every 3d object with their Center of mass and centroid position.
+
+
+Errors:
+-If the code isnt working correctly follow the steps in the code manually 
+then find what threshold and size of object is required for your image and then change them in the ".java" code and recompile.
+
+
+
+How To Run The Code:
+-download the .class file 
+-go into the fiji folder then go into the plugins folder and put the '.class' file in there
+-restart Fiji
+-In fiji go to plugins and select "Registration Test"
+-follow the instructions and Voila
+****************************************************************************************************************************
+Minimization code is supposed to be used with The Registration tester code.
+Pre Requisits:
+-you must find each and every point of intrest in your non registered image and record the center of mass of these structures in a 'Points.csv'file.
+-make sure to follow the exact format of the file in this reppository or change the java code
+-if not at least put the x,y,z in the 10th, 11th and 12th comma position respectively with the data starting at the 2nd line
+-The points document shopuld contain the center of mass or centroid positions of all the structures of intrest to you.
+
+What it does:
+-the code simply goes through the "RegisteredPoints.csv" file crerated by the Registration tester code and matches the correct points to the points file
+-it then records the Center of masses of the registered image as well as the L2 distance fromt he non registered points, as well as the average.
+-The data is then saved in a file called FINALRESULTSMF.txt
+
+How to Run it
+-put the minimization.class, points.csv and the RegisteredPoints.csv in the same directory
+-simply run the java code. in ubuntu the command is: java minimization
+-there you go the results should be displayed in your teminal as well as in the created file.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
