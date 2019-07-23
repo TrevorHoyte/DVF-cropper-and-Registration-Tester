@@ -23,6 +23,7 @@ The Code Registration Test is used to measure bead distance
 Errors:
 -If the code isnt working correctly follow the steps in the code manually 
 then find what threshold and size of object is required for your image and then change them in the ".java" code and recompile.
+-look at line 173 to change the threshold and size of object.
 
 
 
