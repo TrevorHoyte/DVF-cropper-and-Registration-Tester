@@ -169,7 +169,7 @@ public class Registration_TEST implements PlugIn {
 			imp3.show();
 			IJ.run("8-bit");
 			IJ.run("3D OC Options", "volume centroid centre_of_mass dots_size=5 font_size=10 show_numbers white_numbers store_results_within_a_table_named_after_the_image_(macro_friendly) redirect_to=none");
-			IJ.run("3D Objects Counter", "threshold=21 slice=160 min.=1 max.=8 exclude_objects_on_edges statistics summary");
+			IJ.run("3D Objects Counter", ""); //"threshold=139 slice=256 min.=1 max.=25 exclude_objects_on_edges statistics summary");
 			// CHange these settings above for your specific image. 35 or 21 from my estimates for threshold
 			IJ.renameResults("Statistics for Result of Registered-Image", "RegisteredPoints.csv");
 			IJ.saveAs("Results", dir + "RegisteredPoints.csv");
