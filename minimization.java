@@ -9,7 +9,7 @@ import java.io.*;
 import java.lang.*;
 import java.util.*;
 import java.lang.Math;
-
+import java.text.*;
 
 public class minimization {
 
@@ -29,9 +29,9 @@ public class minimization {
 			while (inputStream.hasNext()) {
 				String data =inputStream.next();
 				String[] values =data.split(",");
-				double xn = Double.parseDouble(values[10]);
-				double yn = Double.parseDouble(values[11]);
-				double zn = Double.parseDouble(values[12]);
+				double xn = Double.parseDouble(values[8]);
+				double yn = Double.parseDouble(values[9]);
+				double zn = Double.parseDouble(values[10]);
 
 				
 				//for average
@@ -74,8 +74,11 @@ public class minimization {
 						double sum1 =xsq+ysq+zsq;
 
 						Distance = Math.sqrt(sum1);
-						String DistwithID = +Distance+ ",ID: "+ "x:"+XMtest +", y:"+  YMtest + ", z:" +ZMtest ;
-
+						//rounding
+						DecimalFormat df = new DecimalFormat("###.##");
+					
+						String DistwithID =  df.format(Distance) + " || R.I x:"+ df.format(XMtest) +",y:"+  df.format(YMtest) + ",z:" +df.format(ZMtest)
+						 + " || OG x:" + df.format(xn) + ",y:"+ df.format(yn) + ",z:" +df.format(zn);
 
 						//Write file with distance and coordinates of registered tumors
 						// need to make sure the file is empty 
@@ -96,8 +99,8 @@ public class minimization {
 
 					}
 					inputStream2.close();	
-
-					System.out.println("minimum distance: , "+ minDistwithID);
+					
+					 System.out.println("distance: "+ minDistwithID);
 					File file3 =new File("FINALRESULTSMF.txt");
 					FileWriter fw3 = new FileWriter(file3,true);
 					PrintWriter pw3 = new PrintWriter(fw3);
