@@ -19,6 +19,9 @@ The Code Registration Test is used to measure bead distance
 -the code thresholds the result image to a highlight the high intensity structures ie the beads and mabny others parts.
 -the code then saves a csv file containing every 3d object with their Center of mass and centroid position.
 
+Use Registration_Tester_mha  when your registered image is in a mha format.
+Use Registration_Test  when your registered image is in a mhd format.
+
 
 Errors:
 -If the code isnt working correctly follow the steps in the code manually 
