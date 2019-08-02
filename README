@@ -34,7 +34,9 @@ How To Run The Code:
 -In fiji go to plugins and select "Registration Test"
 -follow the instructions and Voila
 ****************************************************************************************************************************
-Minimization code is supposed to be used with The Registration tester code.
+Note: Minimization code and minSTD do the same thing except minSTD calculates the Standard Deviation also
+
+The code is supposed to be used with The Registration tester code.
 Pre Requisits:
 -you must find each and every point of intrest in your non registered image and record the center of mass of these structures in a 'Points.csv'file.
 -make sure to follow the exact format of the file in this reppository or change the java code
@@ -50,6 +52,7 @@ How to Run it
 -put the minimization.class, points.csv and the RegisteredPoints.csv in the same directory
 -simply run the java code. in ubuntu the command is: java minimization
 -there you go the results should be displayed in your teminal as well as in the created file.
+
 
 
 
